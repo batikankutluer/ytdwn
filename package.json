@@ -1,0 +1,65 @@
+{
+  "name": "ytdwn",
+  "version": "1.0.0",
+  "description": "A fast and simple CLI tool to download audio from YouTube videos",
+  "author": {
+    "name": "Batikan Kutluer",
+    "url": "https://github.com/batikankutluer"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/batikankutluer/ytdwn.git"
+  },
+  "homepage": "https://github.com/batikankutluer/ytdwn#readme",
+  "bugs": {
+    "url": "https://github.com/batikankutluer/ytdwn/issues"
+  },
+  "keywords": [
+    "youtube",
+    "download",
+    "mp3",
+    "audio",
+    "yt-dlp",
+    "cli",
+    "music",
+    "converter",
+    "extractor",
+    "bun"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ytdwn": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "bun run index.ts",
+    "build": "bun run build:clean && bun run build:bundle && bun run build:chmod",
+    "build:clean": "rm -rf dist",
+    "build:bundle": "bun build ./index.ts --outfile ./dist/index.js --target node --packages external",
+    "build:chmod": "chmod +x dist/index.js",
+    "typecheck": "bun x tsc --noEmit",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "cfonts": "^3.3.1",
+    "commander": "^14.0.2",
+    "gradient-string": "^3.0.0",
+    "picocolors": "^1.1.1",
+    "yt-dlp-wrap": "^2.3.12"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.14",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

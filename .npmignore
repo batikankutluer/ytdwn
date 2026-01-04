@@ -1,0 +1,46 @@
+# Development
+.git
+.gitignore
+.github
+.vscode
+.idea
+.cursor
+
+# Source files (dist is published)
+src
+index.ts
+types.d.ts
+
+# Build artifacts
+bin
+node_modules
+*.tgz
+
+# Config files
+tsconfig.json
+tsconfig.build.json
+bun.lock
+.eslintrc*
+.prettierrc*
+
+# Documentation (README is included by default)
+CHANGELOG.md
+CONTRIBUTING.md
+docs
+
+# Test files
+test
+tests
+*.test.ts
+*.spec.ts
+coverage
+.nyc_output
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
