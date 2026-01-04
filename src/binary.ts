@@ -2,7 +2,6 @@ import { constants as fsConstants } from "fs";
 import { access, chmod, mkdir, writeFile } from "fs/promises";
 import { platform, arch } from "os";
 import { join, dirname } from "path";
-import YTDlpWrap from "yt-dlp-wrap";
 import { BIN_DIR } from "./config";
 import {
   getCachedBinaryPath,
@@ -154,7 +153,37 @@ export async function requireBinary(): Promise<string> {
  * Downloads the latest yt-dlp binary from GitHub.
  */
 export async function downloadLatestBinary(): Promise<string> {
-  const [release] = (await YTDlpWrap.getGithubReleases(1, 1)) as Release[];
+  // Try to use yt-dlp-wrap first (works in CommonJS/development)
+  // Fallback to direct GitHub API if it fails (ESM compatibility)
+  let release: Release | null = null;
+
+  try {
+    // Dynamic import for ESM compatibility
+    const ytDlpWrapModule = await import("yt-dlp-wrap");
+    const YTDlpWrap = ytDlpWrapModule.default;
+
+    if (typeof YTDlpWrap?.getGithubReleases === "function") {
+      const releases = await YTDlpWrap.getGithubReleases(1, 1);
+      release = Array.isArray(releases) ? releases[0] : releases;
+    }
+  } catch (err) {
+    // Fall through to GitHub API
+  }
+
+  // Fallback to direct GitHub API if yt-dlp-wrap failed
+  if (!release) {
+    const response = await fetch(
+      "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch yt-dlp release: ${response.status} ${response.statusText}`
+      );
+    }
+
+    release = (await response.json()) as Release;
+  }
 
   if (!release) {
     throw new Error("Failed to fetch yt-dlp release from GitHub.");
