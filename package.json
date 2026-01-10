@@ -1,7 +1,7 @@
 {
   "name": "ytdwn",
-  "version": "1.0.1",
-  "description": "A fast and simple CLI tool to download audio from YouTube videos",
+  "version": "1.1.0",
+  "description": "A fast and simple CLI tool to download audio and video from YouTube",
   "author": {
     "name": "Batikan Kutluer",
     "url": "https://github.com/batikankutluer"
@@ -19,6 +19,8 @@
     "youtube",
     "download",
     "mp3",
+    "mp4",
+    "video",
     "audio",
     "yt-dlp",
     "cli",
@@ -48,12 +50,13 @@
     "build:types": "bun x tsc --project tsconfig.build.json --emitDeclarationOnly",
     "build:chmod": "chmod +x dist/index.js",
     "typecheck": "bun x tsc --noEmit",
+    "test": "bun test",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "cfonts": "^3.3.1",
     "commander": "^14.0.2",
+    "effect": "^3.19.14",
     "gradient-string": "^3.0.0",
     "picocolors": "^1.1.1",
     "yt-dlp-wrap": "^2.3.12"
