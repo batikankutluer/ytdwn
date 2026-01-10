@@ -183,7 +183,7 @@ function buildArgs(
   // Format-specific args
   const formatArgs = isVideo
     ? [
-        "-f", `bestvideo[ext=${format}]+bestaudio/best[ext=${format}]/best`,
+        "-f", "bestvideo+bestaudio/best",
         "--merge-output-format", format,
       ]
     : [

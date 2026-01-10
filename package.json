@@ -1,6 +1,6 @@
 {
   "name": "ytdwn",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A fast and simple CLI tool to download audio and video from YouTube",
   "author": {
     "name": "Batikan Kutluer",
