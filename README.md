@@ -1,136 +1,176 @@
-# YTDWN
+<div align="center">
 
-A fast and simple CLI tool to download audio from YouTube videos. Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+```
+ ██╗   ██╗ ████████╗ ██████╗  ██╗    ██╗ ███╗   ██╗
+ ╚██╗ ██╔╝ ╚══██╔══╝ ██╔══██╗ ██║    ██║ ████╗  ██║
+  ╚████╔╝     ██║    ██║  ██║ ██║ █╗ ██║ ██╔██╗ ██║
+   ╚██╔╝      ██║    ██║  ██║ ██║███╗██║ ██║╚██╗██║
+    ██║       ██║    ██████╔╝ ╚███╔███╔╝ ██║ ╚████║
+    ╚═╝       ╚═╝    ╚═════╝   ╚══╝╚══╝  ╚═╝  ╚═══╝
+```
+
+**A fast and simple CLI tool to download audio and video from YouTube**
+
+[![npm version](https://img.shields.io/npm/v/ytdwn.svg)](https://www.npmjs.com/package/ytdwn)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+</div>
 
 ## ✨ Features
 
-- 🎵 Download audio from YouTube in MP3 or other formats
-- ✂️ Clip specific sections of videos (e.g., `1:30-2:45`)
-- 📁 Set a default download folder
-- 🚀 Fast parallel downloads with concurrent fragments
-- 🎨 Beautiful progress bar and colored output
-- 📦 Auto-downloads yt-dlp binary if not present
+- 🎵 **Audio Downloads** - MP3, OPUS, M4A, FLAC, and more
+- 🎥 **Video Downloads** - MP4, MKV, WebM with best quality *(new in v1.1.0)*
+- ✂️ **Clip Sections** - Download only specific time ranges
+- 📁 **Custom Folders** - Set a default download directory
+- 🚀 **Fast Downloads** - Parallel fragment downloading
+- 🎨 **Beautiful UI** - Gradient banner, spinners, progress bars
+- 📦 **Auto-Setup** - Downloads yt-dlp binary automatically
 
 ## 📋 Requirements
 
 - [Node.js](https://nodejs.org) >= 18.0.0 or [Bun](https://bun.sh) >= 1.0.0
+- [FFmpeg](https://ffmpeg.org) (for video merging and audio conversion)
 
-## 🚀 Installation
-
-### Using npm/npx
+## 🚀 Quick Start
 
 ```bash
-# Run directly without installing
-npx ytdwn prepare
-npx ytdwn https://www.youtube.com/watch?v=VIDEO_ID
-
-# Or install globally
+# Install globally
 npm install -g ytdwn
+
+# First-time setup (downloads yt-dlp)
 ytdwn prepare
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID
-```
 
-### Using Bun
+# Download audio (MP3)
+ytdwn "https://www.youtube.com/watch?v=VIDEO_ID"
 
-```bash
-# Run directly without installing
-bunx ytdwn prepare
-bunx ytdwn https://www.youtube.com/watch?v=VIDEO_ID
-
-# Or install globally
-bun add -g ytdwn
-ytdwn prepare
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID
-```
-
-### From Source
-
-```bash
-# Clone the repository
-git clone https://github.com/batikankutluer/ytdwn.git
-cd ytdwn
-
-# Install dependencies
-bun install
-
-# Run directly from source (no build needed)
-bun run index.ts prepare
-bun run index.ts https://www.youtube.com/watch?v=VIDEO_ID
-
-# Or build and use the compiled version
-bun run build
-node dist/index.js prepare
+# Download video (MP4)
+ytdwn "https://www.youtube.com/watch?v=VIDEO_ID" -f mp4
 ```
 
 ## 📖 Usage
 
-### Basic Download
+### Basic Examples
 
 ```bash
-# Download audio from a YouTube URL
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID
+# Download as MP3 (default)
+ytdwn "https://youtube.com/watch?v=VIDEO_ID"
 
-# Or use the short form
-ytdwn https://youtu.be/VIDEO_ID
+# Download as MP4 video
+ytdwn "https://youtube.com/watch?v=VIDEO_ID" -f mp4
+
+# Clip a specific section (1:30 to 2:45)
+ytdwn "https://youtube.com/watch?v=VIDEO_ID" -c 1:30-2:45
+
+# Download video clip
+ytdwn "https://youtube.com/watch?v=VIDEO_ID" -f mp4 -c 1:30-2:45
+
+# Quiet mode (outputs only filename)
+ytdwn "https://youtube.com/watch?v=VIDEO_ID" -q
 ```
 
 ### Options
 
-| Flag                    | Description                    | Example          |
-| ----------------------- | ------------------------------ | ---------------- |
-| `-f, --format <format>` | Audio format (default: mp3)    | `-f opus`        |
-| `-c, --clip <range>`    | Clip a specific time range     | `-c 01:30-02:45` |
-| `-q, --quiet`           | Minimal output (only filename) | `-q`             |
-| `-v, --version`         | Show version                   | `-v`             |
-| `-h, --help`            | Show help                      | `-h`             |
-
-### Examples
-
-```bash
-# Download as MP3 (default)
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID
-
-# Download as OPUS format
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID -f opus
-
-# Download only a portion (from 1:30 to 2:45)
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID -c 1:30-2:45
-
-# Quiet mode - outputs only the filename
-ytdwn https://www.youtube.com/watch?v=VIDEO_ID -q
-```
+| Flag | Description | Example |
+|------|-------------|---------|
+| `-f, --format <format>` | Output format (mp3, mp4, mkv, etc.) | `-f mp4` |
+| `-c, --clip <range>` | Clip time range | `-c 1:30-2:45` |
+| `-q, --quiet` | Minimal output | `-q` |
+| `-v, --version` | Show version | `-v` |
+| `-h, --help` | Show help | `-h` |
 
 ### Commands
 
 ```bash
-# Download and prepare yt-dlp binary
+# Download yt-dlp binary
 ytdwn prepare
 
 # Set default download folder
-ytdwn setDefaultFolder ~/Music/YouTube
+ytdwn setDefaultFolder ~/Downloads/YouTube
 
-# View current download folder
+# View current folder
 ytdwn setDefaultFolder
 
 # Reset to current directory
 ytdwn setDefaultFolder --reset
 ```
 
+### Supported Formats
+
+| Type | Formats |
+|------|---------|
+| Audio | mp3, opus, m4a, flac, aac, wav |
+| Video | mp4, mkv, webm, avi, mov |
+
+## 🛠️ Installation Options
+
+### npm / npx
+
+```bash
+# Run without installing
+npx ytdwn prepare
+npx ytdwn "https://youtube.com/watch?v=VIDEO_ID"
+
+# Install globally
+npm install -g ytdwn
+```
+
+### Bun
+
+```bash
+# Run without installing
+bunx ytdwn prepare
+bunx ytdwn "https://youtube.com/watch?v=VIDEO_ID"
+
+# Install globally
+bun add -g ytdwn
+```
+
+### From Source
+
+```bash
+git clone https://github.com/batikankutluer/ytdwn.git
+cd ytdwn
+bun install
+bun run index.ts prepare
+bun run index.ts "https://youtube.com/watch?v=VIDEO_ID"
+```
+
 ## ⚙️ Configuration
 
 Settings are stored in `~/.ytdwn.json`:
 
-- `downloadDir`: Default folder for downloaded files
-- `binaryPath`: Cached path to yt-dlp binary
+| Key | Description |
+|-----|-------------|
+| `downloadDir` | Default download folder |
+| `binaryPath` | Cached path to yt-dlp |
+
+## 🧪 Development
+
+```bash
+# Run tests
+bun test
+
+# Type check
+bun run typecheck
+
+# Build
+bun run build
+```
 
 ## 🛠️ Tech Stack
 
-- **Runtime**: [Node.js](https://nodejs.org) or [Bun](https://bun.sh)
-- **CLI Framework**: [Commander.js](https://github.com/tj/commander.js)
+- **Runtime**: Node.js / Bun
+- **Type Safety**: [Effect.TS](https://effect.website)
+- **CLI**: [Commander.js](https://github.com/tj/commander.js)
 - **Downloader**: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- **Audio Processing**: [FFmpeg](https://ffmpeg.org)
-- **Styling**: [cfonts](https://github.com/dominikwilkowski/cfonts), [gradient-string](https://github.com/bokub/gradient-string), [picocolors](https://github.com/alexeyraspopov/picocolors)
+- **Binary Management**: [yt-dlp-wrap](https://github.com/foxesdocode/yt-dlp-wrap)
 
 ## 📄 License
 
-MIT - see [LICENSE](LICENSE) file for details
+MIT - see [LICENSE](LICENSE) for details
+
+---
+
+<div align="center">
+Made with ❤️ by <a href="https://github.com/batikankutluer">Batikan Kutluer</a>
+</div>

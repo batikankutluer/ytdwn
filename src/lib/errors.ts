@@ -1,45 +1,86 @@
-import { join } from "path";
+import { Data } from "effect";
 
 // ─────────────────────────────────────────────────────────────
-// App Info
+// File System Errors
 // ─────────────────────────────────────────────────────────────
 
-export const APP_NAME = "ytdwn";
-export const APP_TAGLINE = "YouTube to MP3/MP4 • Fast & Simple";
-export const APP_VERSION = "1.1.0";
+export class FileWriteError extends Data.TaggedError("FileWriteError")<{
+  readonly path: string;
+  readonly cause?: unknown;
+}> {}
+
+export class DirectoryCreateError extends Data.TaggedError(
+  "DirectoryCreateError"
+)<{
+  readonly path: string;
+  readonly cause?: unknown;
+}> {}
 
 // ─────────────────────────────────────────────────────────────
-// Audio Configuration
+// Network Errors
 // ─────────────────────────────────────────────────────────────
 
-export const DEFAULT_AUDIO_FORMAT = "mp3";
-export const DEFAULT_AUDIO_QUALITY = "0"; // yt-dlp highest VBR quality
+export class NetworkError extends Data.TaggedError("NetworkError")<{
+  readonly url?: string;
+  readonly message: string;
+}> {}
+
+export class DownloadError extends Data.TaggedError("DownloadError")<{
+  readonly url: string;
+  readonly cause?: unknown;
+}> {}
 
 // ─────────────────────────────────────────────────────────────
-// Video Configuration
+// Binary Errors
 // ─────────────────────────────────────────────────────────────
 
-export const DEFAULT_VIDEO_FORMAT = "mp4";
-export const DEFAULT_VIDEO_QUALITY = "best"; // Best available quality
+export class BinaryNotFoundError extends Data.TaggedError(
+  "BinaryNotFoundError"
+)<{
+  readonly message: string;
+}> {}
+
+export class BinaryDownloadError extends Data.TaggedError(
+  "BinaryDownloadError"
+)<{
+  readonly platform: string;
+  readonly cause?: unknown;
+}> {}
+
+export class BinaryExecutionError extends Data.TaggedError(
+  "BinaryExecutionError"
+)<{
+  readonly exitCode: number;
+  readonly message: string;
+}> {}
 
 // ─────────────────────────────────────────────────────────────
-// Download Configuration
+// Timestamp Errors
 // ─────────────────────────────────────────────────────────────
 
-export const CONCURRENT_FRAGMENTS = "8";
-
-// Legacy export for backward compatibility
-export const DEFAULT_FORMAT = DEFAULT_AUDIO_FORMAT;
-
-// ─────────────────────────────────────────────────────────────
-// Paths
-// ─────────────────────────────────────────────────────────────
-
-export const BIN_DIR = join(process.cwd(), "bin");
+export class TimestampParseError extends Data.TaggedError(
+  "TimestampParseError"
+)<{
+  readonly input: string;
+  readonly message: string;
+}> {}
 
 // ─────────────────────────────────────────────────────────────
-// Templates
+// Application Errors (high-level)
 // ─────────────────────────────────────────────────────────────
 
-export const getOutputTemplate = (downloadDir: string) =>
-  join(downloadDir, "%(title)s.%(ext)s");
+export class VideoNotFoundError extends Data.TaggedError("VideoNotFoundError")<{
+  readonly url: string;
+}> {}
+
+export class InvalidUrlError extends Data.TaggedError("InvalidUrlError")<{
+  readonly url: string;
+}> {}
+
+export class AgeRestrictedError extends Data.TaggedError("AgeRestrictedError")<{
+  readonly url: string;
+}> {}
+
+export class ConnectionError extends Data.TaggedError("ConnectionError")<{
+  readonly message: string;
+}> {}
