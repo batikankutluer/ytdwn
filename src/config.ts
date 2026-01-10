@@ -6,7 +6,7 @@ import { join } from "path";
 
 export const APP_NAME = "ytdwn";
 export const APP_TAGLINE = "YouTube to MP3/MP4 • Fast & Simple";
-export const APP_VERSION = "1.1.0";
+export const APP_VERSION = "1.1.1";
 
 // ─────────────────────────────────────────────────────────────
 // Audio Configuration

@@ -1,7 +1,11 @@
 import { Effect, Context, Layer } from "effect";
-import YTDlpWrap from "yt-dlp-wrap";
+import YTDlpWrapModule from "yt-dlp-wrap";
 import { platform } from "os";
 import { join } from "path";
+
+// Handle ESM/CJS interop
+const YTDlpWrap = (YTDlpWrapModule as unknown as { default?: typeof YTDlpWrapModule }).default ?? YTDlpWrapModule;
+
 import { BIN_DIR } from "../config";
 import { isExecutable, ensureDirectory, makeExecutable, writeFileBinary } from "../lib/filesystem";
 import { fetchBinaryWithRetry } from "../lib/http";
@@ -96,7 +100,7 @@ export class BinaryService extends Context.Tag("BinaryService")<
   {
     readonly findBinary: Effect.Effect<string | null>;
     readonly requireBinary: Effect.Effect<string, BinaryNotFoundError>;
-    readonly getYtDlpWrap: Effect.Effect<YTDlpWrap, BinaryNotFoundError>;
+    readonly getYtDlpWrap: Effect.Effect<InstanceType<typeof YTDlpWrap>, BinaryNotFoundError>;
     readonly downloadLatestBinary: Effect.Effect<
       string,
       BinaryDownloadError | DownloadError | FileWriteError | DirectoryCreateError
