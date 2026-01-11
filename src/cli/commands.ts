@@ -36,12 +36,14 @@ export const prepareCommand = Effect.gen(function* () {
   const binary = yield* BinaryService;
 
   const existing = yield* binary.findBinary;
-  if (existing) {
+  const ffmpeg = yield* binary.requireFFmpeg;
+
+  if (existing && ffmpeg) {
     yield* logSuccess("Ready");
     return;
   }
 
-  yield* logDim("Downloading yt-dlp...");
+  yield* logDim("Downloading dependencies...");
   yield* binary.downloadLatestBinary;
   yield* logSuccess("Ready");
 });

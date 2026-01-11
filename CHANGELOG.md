@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-01-11
+
+### Changed
+
+- **Refactored Clip Strategy**: Now downloads full video (multi-threaded, max speed) and cuts locally with FFmpeg, solving slow download speeds for clips
+- Re-added `@ffmpeg-installer/ffmpeg` for hassle-free automated FFmpeg setup on all platforms
+
+### Fixed
+
+- Fixed `yt-dlp` merge issues on macOS by enforcing static FFmpeg binary
+- Fixed missing progress bar for clip downloads
+- Fixed speed indicator for clips to show real transfer speed (MB/s) instead of processing speed multiplier
+
+## [1.1.3] - 2026-01-11
+
+### Fixed
+
+- Fixed "Postprocessing" errors by implementing system FFmpeg detection with fallback mechanism
+- Improved cross-platform compatibility for video builds (macOS/Linux/Windows)
+
 ## [1.1.2] - 2026-01-11
 
 ### Fixed

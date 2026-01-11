@@ -7,6 +7,7 @@ import {
   ConnectionError,
   BinaryExecutionError,
   BinaryDownloadError,
+  DownloadError,
   NetworkError,
   FileWriteError,
   DirectoryCreateError,
@@ -25,6 +26,7 @@ export type AppError =
   | ConnectionError
   | BinaryExecutionError
   | BinaryDownloadError
+  | DownloadError
   | NetworkError
   | FileWriteError
   | DirectoryCreateError;
@@ -42,6 +44,7 @@ const formatAppError = (error: AppError): string =>
     Match.tag("ConnectionError", (e) => e.message),
     Match.tag("BinaryExecutionError", (e) => e.message),
     Match.tag("BinaryDownloadError", () => "Failed to download yt-dlp binary"),
+    Match.tag("DownloadError", (e) => `Download failed: ${e.url}`),
     Match.tag("NetworkError", (e) => e.message),
     Match.tag("FileWriteError", () => "Failed to write file"),
     Match.tag("DirectoryCreateError", () => "Failed to create directory"),
