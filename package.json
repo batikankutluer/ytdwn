@@ -54,6 +54,7 @@
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "cfonts": "^3.3.1",
     "commander": "^14.0.2",
     "effect": "^3.19.14",

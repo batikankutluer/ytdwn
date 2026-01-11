@@ -1,5 +1,7 @@
 import { Effect, Context, Layer } from "effect";
 import YTDlpWrapModule from "yt-dlp-wrap";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+const ffmpegPath = ffmpegInstaller.path;
 import { platform } from "os";
 import { join } from "path";
 
@@ -105,8 +107,9 @@ export class BinaryService extends Context.Tag("BinaryService")<
       string,
       BinaryDownloadError | DownloadError | FileWriteError | DirectoryCreateError
     >;
+    readonly requireFFmpeg: Effect.Effect<string>;
   }
->() {}
+>() { }
 
 // ─────────────────────────────────────────────────────────────
 // Live Implementation
@@ -129,18 +132,15 @@ export const BinaryServiceLive = Layer.effect(
     });
 
     const findBinary = Effect.gen(function* () {
-      // Check cache first
       const cached = yield* settings.getCachedBinaryPath;
       if (cached) {
         const executable = yield* isExecutable(cached);
         if (executable) return cached;
       }
 
-      // Cache miss or invalid - search file system
       const found = yield* searchForBinary;
       if (found) return found;
 
-      // Clear invalid cache (non-critical, ignore errors)
       if (cached) {
         yield* settings.clearCachedBinaryPath.pipe(Effect.ignore);
       }
@@ -158,14 +158,15 @@ export const BinaryServiceLive = Layer.effect(
       );
     });
 
-    // Get a configured YTDlpWrap instance
+    // Provide path from @ffmpeg-installer/ffmpeg
+    const requireFFmpeg = Effect.succeed(ffmpegPath);
+
     const getYtDlpWrap = Effect.gen(function* () {
       const binaryPath = yield* requireBinary;
       return new YTDlpWrap(binaryPath);
     });
 
     const downloadLatestBinary = Effect.gen(function* () {
-      // Use yt-dlp-wrap to get latest release info
       const releases = yield* Effect.tryPromise({
         try: () => YTDlpWrap.getGithubReleases(1, 1),
         catch: (cause) =>
@@ -188,26 +189,19 @@ export const BinaryServiceLive = Layer.effect(
       const asset = yield* pickAsset(release as Release);
       const binaryPath = join(BIN_DIR, asset.name);
 
-      // Check if already exists
       const exists = yield* isExecutable(binaryPath);
-      if (exists) {
-        yield* settings.setCachedBinaryPath(binaryPath).pipe(Effect.ignore);
-        return binaryPath;
-      }
+      if (!exists) {
+        yield* ensureDirectory(BIN_DIR);
+        const data = yield* fetchBinaryWithRetry(asset.browser_download_url);
+        yield* writeFileBinary(binaryPath, data);
 
-      // Ensure bin directory exists
-      yield* ensureDirectory(BIN_DIR);
-
-      // Download binary
-      const data = yield* fetchBinaryWithRetry(asset.browser_download_url);
-      yield* writeFileBinary(binaryPath, data);
-
-      // Make executable on non-Windows
-      if (platform() !== "win32") {
-        yield* makeExecutable(binaryPath);
+        if (platform() !== "win32") {
+          yield* makeExecutable(binaryPath);
+        }
       }
 
       yield* settings.setCachedBinaryPath(binaryPath).pipe(Effect.ignore);
+
       return binaryPath;
     });
 
@@ -216,6 +210,7 @@ export const BinaryServiceLive = Layer.effect(
       requireBinary,
       getYtDlpWrap,
       downloadLatestBinary,
+      requireFFmpeg,
     };
   })
 );

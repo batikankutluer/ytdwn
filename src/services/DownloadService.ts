@@ -60,7 +60,7 @@ function createSpinner(initialMessage = "Getting ready...", quiet = false) {
   let stopped = false;
 
   if (quiet) {
-    return { update: () => {}, stop: () => {} };
+    return { update: () => { }, stop: () => { } };
   }
 
   const interval = setInterval(() => {
@@ -119,19 +119,19 @@ function mapOutputToError(
     /this video is age-restricted/i,
     /confirm your age/i,
   ];
-  
+
   if (ageRestrictedPatterns.some((p) => p.test(output))) {
     return new AgeRestrictedError({ url });
   }
-  
+
   if (/\b(network|connection)\s+(error|failed|refused)/i.test(output)) {
     return new ConnectionError({ message: "Connection error, try again" });
   }
-  
+
   if (/video unavailable/i.test(output) || /private video/i.test(output)) {
     return new VideoNotFoundError({ url });
   }
-  
+
   return null;
 }
 
@@ -164,7 +164,8 @@ const isVideoFormat = (format: string): boolean =>
 function buildArgs(
   url: string,
   options: DownloadOptions,
-  downloadDir: string
+  downloadDir: string,
+  ffmpegPath: string | null
 ): string[] {
   const format = options.format.toLowerCase();
   const isVideo = isVideoFormat(format);
@@ -178,21 +179,28 @@ function buildArgs(
     "--progress",
     "--concurrent-fragments", CONCURRENT_FRAGMENTS,
     "--no-check-certificates",
+    "--restrict-filenames",
   ];
+
+  if (ffmpegPath) {
+    baseArgs.push("--ffmpeg-location", ffmpegPath);
+  }
+
+
 
   // Format-specific args
   const formatArgs = isVideo
     ? [
-        "-f", "bestvideo+bestaudio/best",
-        "--merge-output-format", format,
-      ]
+      "-f", "bestvideo+bestaudio/best",
+      "--merge-output-format", format,
+    ]
     : [
-        "-f", "bestaudio/best",
-        "-x",
-        "--audio-format", format,
-        "--audio-quality", DEFAULT_AUDIO_QUALITY,
-        "--prefer-free-formats",
-      ];
+      "-f", "bestaudio/best",
+      "-x",
+      "--audio-format", format,
+      "--audio-quality", DEFAULT_AUDIO_QUALITY,
+      "--prefer-free-formats",
+    ];
 
   // Clip args
   const clipArgs = options.clip
@@ -219,7 +227,7 @@ export class DownloadService extends Context.Tag("DownloadService")<
       | DownloadPipelineError
     >;
   }
->() {}
+>() { }
 
 // ─────────────────────────────────────────────────────────────
 // Live Implementation using yt-dlp-wrap
@@ -281,13 +289,13 @@ function executeDownload(
           state.fileName = match[1].split("/").pop() || null;
         }
       }
-      
+
       if (eventType === "download") {
         const destMatch = eventData.match(/Destination:\s*(.+)/);
         if (destMatch?.[1]) {
           state.fileName = destMatch[1].split("/").pop() || null;
         }
-        
+
         // Extract file size
         const sizeMatch = eventData.match(/~?([\d.]+\s*[KMG]i?B)/i);
         if (sizeMatch?.[1]) {
@@ -326,17 +334,17 @@ function executeDownload(
       resume(
         Effect.fail(
           outputError ??
-            new BinaryExecutionError({
-              exitCode: -1,
-              message: String(error),
-            })
+          new BinaryExecutionError({
+            exitCode: -1,
+            message: String(error),
+          })
         )
       );
     });
 
     emitter.on("close", () => {
       cleanup();
-      
+
       // Check if we have output that indicates an error
       const outputError = mapOutputToError(state.outputBuffer, url);
       if (outputError) {
@@ -371,15 +379,16 @@ export const DownloadServiceLive = Layer.effect(
     return {
       download: (url: string, options: DownloadOptions) =>
         Effect.gen(function* () {
-          const [downloadDir, ytDlpWrap] = yield* Effect.all([
+          const [downloadDir, ytDlpWrap, ffmpegPath] = yield* Effect.all([
             settings.getDownloadDir.pipe(
               Effect.flatMap((dir) => ensureDirectory(dir))
             ),
             binary.getYtDlpWrap,
+            binary.requireFFmpeg,
           ]);
 
           const quiet = options.quiet ?? false;
-          const args = buildArgs(url, options, downloadDir);
+          const args = buildArgs(url, options, downloadDir, ffmpegPath);
 
           return yield* executeDownload(
             ytDlpWrap,
