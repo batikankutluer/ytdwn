@@ -290,7 +290,20 @@ function executeDownload(
         }
       }
 
+      // Handle start of download for clips
+      if (eventType === "info" && eventData.includes("Downloading 1 time ranges")) {
+        if (state.phase === "init") {
+          state.phase = "downloading";
+          spinner.stop();
+        }
+      }
+
       if (eventType === "download") {
+        if (state.phase === "init") {
+          state.phase = "downloading";
+          spinner.stop();
+        }
+
         const destMatch = eventData.match(/Destination:\s*(.+)/);
         if (destMatch?.[1]) {
           state.fileName = destMatch[1].split("/").pop() || null;
