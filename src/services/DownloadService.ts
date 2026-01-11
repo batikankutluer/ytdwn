@@ -19,6 +19,9 @@ import { BinaryService } from "./BinaryService";
 import { SettingsService } from "./SettingsService";
 import { parseClipRange } from "../timestamp";
 import { c } from "../colors";
+import * as fs from "fs";
+import * as path from "path";
+import { spawn } from "child_process";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -203,9 +206,8 @@ function buildArgs(
     ];
 
   // Clip args
-  const clipArgs = options.clip
-    ? ["--download-sections", `*${parseClipRange(options.clip)}`]
-    : [];
+  // NOTE: We download full video then cut manually for better speed
+  const clipArgs: string[] = [];
 
   return [...baseArgs, ...formatArgs, ...clipArgs];
 }
@@ -374,7 +376,13 @@ function executeDownload(
 
       // Extract file name from destination
       if (eventType === "ExtractAudio" || eventType === "Merger") {
-        const match = eventData.match(/Destination:\s*(.+)/);
+        // Try standard Destination pattern
+        let match = eventData.match(/Destination:\s*(.+)/);
+        // Try Merger pattern: Merging formats into "filename"
+        if (!match) {
+          match = eventData.match(/Merging formats into "(.+)"/);
+        }
+
         if (match?.[1]) {
           state.fileName = match[1].split("/").pop() || null;
         }
@@ -509,15 +517,87 @@ export const DownloadServiceLive = Layer.effect(
           ]);
 
           const quiet = options.quiet ?? false;
+          // IMPORTANT: If clip is requested, we do NOT pass it to buildArgs
+          // This ensures yt-dlp downloads the FULL video using native threads
           const args = buildArgs(url, options, downloadDir, ffmpegPath);
 
-          return yield* executeDownload(
+          // Execute download
+          const result = yield* executeDownload(
             ytDlpWrap,
             args,
             downloadDir,
             url,
             options
           );
+
+          // If this was a clip, perform the cut now
+          if (options.clip && ffmpegPath && result.fileName && result.filePath) {
+            const fullFilePath = path.join(result.filePath, result.fileName);
+
+            // Verify the file exists
+            if (!fs.existsSync(fullFilePath)) {
+              // If we can't find the file, we can't cut it. Just return the result.
+              if (!quiet) console.error(c.error(`\nCould not find full file for cutting: ${fullFilePath}`));
+              return result;
+            }
+
+            // Parse start/end times
+            const parts = options.clip.split("-");
+            if (parts.length === 2 && parts[0] && parts[1]) {
+              const startTime = parts[0];
+              const endTime = parts[1];
+
+              // Generate output filename
+              const ext = path.extname(result.fileName);
+              const baseName = path.basename(result.fileName, ext);
+              const clipFileName = `${baseName}_clip${ext}`;
+              const clipFilePath = path.join(result.filePath, clipFileName);
+
+              if (!quiet) console.log(c.dim(`\nCutting clip: ${startTime} to ${endTime}...`));
+
+              // Run ffmpeg manually
+              yield* Effect.async<void, BinaryExecutionError>((resume) => {
+                const ffmpeg = spawn(ffmpegPath, [
+                  "-i", fullFilePath,
+                  "-ss", startTime,
+                  "-to", endTime,
+                  "-c", "copy",
+                  "-y", // Overwrite output
+                  clipFilePath
+                ]);
+
+                ffmpeg.on("close", (code: number | null) => {
+                  if (code === 0) {
+                    // Delete full file
+                    try {
+                      fs.unlinkSync(fullFilePath);
+                    } catch (e) {
+                      // Ignore deletion error
+                    }
+                    // Update result to point to clip
+                    result.fileName = clipFileName;
+                    result.fileSize = undefined; // Unknown new size
+                    resume(Effect.void);
+                  } else {
+                    resume(Effect.fail(new BinaryExecutionError({
+                      exitCode: code || -1,
+                      message: "Failed to cut clip with ffmpeg"
+                    })));
+                  }
+                });
+
+                // Handle spawn errors
+                ffmpeg.on("error", (err: Error) => {
+                  resume(Effect.fail(new BinaryExecutionError({
+                    exitCode: -1,
+                    message: `FFmpeg spawn error: ${err.message}`
+                  })));
+                });
+              });
+            }
+          }
+
+          return result;
         }),
     };
   })
