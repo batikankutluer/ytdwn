@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing progress bar for clip downloads
 - Fixed speed indicator for clips to show real transfer speed (MB/s) instead of processing speed multiplier
 
+## [1.1.3] - 2026-01-11
+
+### Fixed
+
+- Fixed "Postprocessing" errors by implementing system FFmpeg detection with fallback mechanism
+- Improved cross-platform compatibility for video builds (macOS/Linux/Windows)
+
 ## [1.1.2] - 2026-01-11
 
 ### Fixed

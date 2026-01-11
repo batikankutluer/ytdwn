@@ -101,13 +101,13 @@ export class BinaryService extends Context.Tag("BinaryService")<
   BinaryService,
   {
     readonly findBinary: Effect.Effect<string | null>;
-    readonly requireBinary: Effect.Effect<string, BinaryNotFoundError>;
+    readonly requireFFmpeg: Effect.Effect<string>;
     readonly getYtDlpWrap: Effect.Effect<InstanceType<typeof YTDlpWrap>, BinaryNotFoundError>;
     readonly downloadLatestBinary: Effect.Effect<
       string,
       BinaryDownloadError | DownloadError | FileWriteError | DirectoryCreateError
     >;
-    readonly requireFFmpeg: Effect.Effect<string>;
+    readonly requireBinary: Effect.Effect<string, BinaryNotFoundError>;
   }
 >() { }
 
@@ -158,8 +158,30 @@ export const BinaryServiceLive = Layer.effect(
       );
     });
 
-    // Provide path from @ffmpeg-installer/ffmpeg
-    const requireFFmpeg = Effect.succeed(ffmpegPath);
+    // Use system ffmpeg with fallback to @ffmpeg-installer
+    const requireFFmpeg = Effect.gen(function* () {
+      // 1. Try system ffmpeg
+      const systemPath = yield* Effect.tryPromise({
+        try: async () => {
+          const { exec } = await import("child_process");
+          const { promisify } = await import("util");
+          const execAsync = promisify(exec);
+          const cmd = process.platform === "win32" ? "where ffmpeg" : "which ffmpeg";
+          const { stdout } = await execAsync(cmd);
+          const outStr = String(stdout);
+          const firstLine = outStr.trim().split("\n")[0];
+          return firstLine ? firstLine.trim() : null;
+        },
+        catch: () => new Error("FFmpeg lookup failed"),
+      }).pipe(
+        Effect.orElseSucceed(() => null)
+      );
+
+      if (systemPath) return systemPath;
+
+      // 2. Fallback to @ffmpeg-installer
+      return ffmpegPath;
+    });
 
     const getYtDlpWrap = Effect.gen(function* () {
       const binaryPath = yield* requireBinary;
