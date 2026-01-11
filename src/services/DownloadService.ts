@@ -269,6 +269,31 @@ function executeDownload(
     // Use yt-dlp-wrap's EventEmitter interface
     const emitter = ytDlpWrap.exec(args);
 
+    // Listen to raw stderr for ffmpeg progress (not caught by ytDlpEvent)
+    if (emitter.ytDlpProcess?.stderr) {
+      emitter.ytDlpProcess.stderr.on("data", (data: Buffer | string) => {
+        const text = data.toString();
+        // Check for ffmpeg progress: frame=... time=...
+        if (text.includes("frame=") && text.includes("time=")) {
+          if (state.phase === "init") {
+            state.phase = "downloading";
+            spinner.stop();
+          }
+
+          const timeMatch = text.match(/time=([\d:.]+)/);
+          const speedMatch = text.match(/speed=\s*([\d.]+)x/);
+
+          if (timeMatch?.[1]) {
+            const speed = speedMatch ? `${speedMatch[1]}x` : undefined;
+            if (!quiet) {
+              clearLine();
+              write(`\r${c.bold("Downloading:")} ${c.dim(timeMatch[1])} ${speed ? c.speed(speed) : ""}`);
+            }
+          }
+        }
+      });
+    }
+
     emitter.on("progress", (progress) => {
       if (state.phase === "init") {
         state.phase = "downloading";
@@ -316,10 +341,19 @@ function executeDownload(
         }
 
         // Fallback progress parsing for clips
-        const percentMatch = eventData.match(/([\d.]+)%/);
+        // Strip ANSI codes first
+        const cleanData = eventData.replace(/\u001b\[.*?m/g, "");
+        const percentMatch = cleanData.match(/(\d+(?:\.\d+)?)%/);
+
         if (percentMatch?.[1]) {
+          // Ensure phase is downloading to allow rendering
+          if (state.phase !== "downloading") {
+            state.phase = "downloading";
+            spinner.stop();
+          }
+
           const percent = parseFloat(percentMatch[1]);
-          const speedMatch = eventData.match(/at\s+([~\d.]+\s*[KMG]i?B\/s)/);
+          const speedMatch = cleanData.match(/at\s+([~\d.]+\s*[KMG]i?B\/s)/);
           const speed = speedMatch?.[1];
           renderProgress(percent, speed || undefined, quiet);
         }
