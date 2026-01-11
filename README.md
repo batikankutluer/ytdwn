@@ -24,12 +24,12 @@
 - 📁 **Custom Folders** - Set a default download directory
 - 🚀 **Fast Downloads** - Parallel fragment downloading
 - 🎨 **Beautiful UI** - Gradient banner, spinners, progress bars
-- 📦 **Auto-Setup** - Downloads yt-dlp binary automatically
+- 📦 **Auto-Setup** - Downloads yt-dlp binary and uses static FFmpeg automatically
 
 ## 📋 Requirements
 
 - [Node.js](https://nodejs.org) >= 18.0.0 or [Bun](https://bun.sh) >= 1.0.0
-- [FFmpeg](https://ffmpeg.org) (for video merging and audio conversion)
+- *FFmpeg is handled automatically via static binaries*
 
 ## 🚀 Quick Start
 
