@@ -314,6 +314,15 @@ function executeDownload(
         if (sizeMatch?.[1]) {
           state.fileSize = sizeMatch[1];
         }
+
+        // Fallback progress parsing for clips
+        const percentMatch = eventData.match(/([\d.]+)%/);
+        if (percentMatch?.[1]) {
+          const percent = parseFloat(percentMatch[1]);
+          const speedMatch = eventData.match(/at\s+([~\d.]+\s*[KMG]i?B\/s)/);
+          const speed = speedMatch?.[1];
+          renderProgress(percent, speed || undefined, quiet);
+        }
       }
 
       // Handle converting phase
