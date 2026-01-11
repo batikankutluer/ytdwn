@@ -246,8 +246,9 @@ function executeDownload(
   args: string[],
   downloadDir: string,
   url: string,
-  quiet: boolean
+  options: DownloadOptions
 ): Effect.Effect<DownloadResult, DownloadPipelineError> {
+  const quiet = options.quiet ?? false;
   return Effect.async<DownloadResult, DownloadPipelineError>((resume) => {
     const spinner = createSpinner("Getting ready...", quiet);
     const state: DownloadState = {
@@ -266,6 +267,49 @@ function executeDownload(
       if (!quiet) clearLine();
     };
 
+    // Helper to parse HH:MM:SS or MM:SS to seconds
+    const parseDurationSeconds = (timeStr: string): number => {
+      const parts = timeStr.split(":").map(Number);
+      if (parts.length === 3) return (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+      if (parts.length === 2) return (parts[0] || 0) * 60 + (parts[1] || 0);
+      return parts[0] || 0;
+    };
+
+    const parseSizeToBytes = (sizeStr: string): number => {
+      const match = sizeStr.match(/([\d.]+)\s*([KMG]i?B)/i);
+      if (!match || !match[1] || !match[2]) return 0;
+      const val = parseFloat(match[1]);
+      const unit = match[2].toUpperCase();
+      const multipliers: Record<string, number> = {
+        "KB": 1024, "KIB": 1024,
+        "MB": 1024 * 1024, "MIB": 1024 * 1024,
+        "GB": 1024 * 1024 * 1024, "GIB": 1024 * 1024 * 1024
+      };
+      return val * (multipliers[unit] || 1);
+    };
+
+    const formatSpeed = (bytesPerSec: number): string => {
+      if (bytesPerSec > 1024 * 1024) return `${(bytesPerSec / (1024 * 1024)).toFixed(2)}MiB/s`;
+      if (bytesPerSec > 1024) return `${(bytesPerSec / 1024).toFixed(2)}KiB/s`;
+      return `${bytesPerSec.toFixed(0)}B/s`;
+    };
+
+    // Speed calculation state
+    let lastBytes = 0;
+    let lastTime = Date.now();
+    let currentSpeedStr: string | undefined;
+
+    // Calculate total duration if clip is present
+    let totalClipDuration = 0;
+    if (options.clip) {
+      const parts = options.clip.split("-");
+      if (parts.length === 2 && parts[0] && parts[1]) {
+        const start = parseDurationSeconds(parts[0]);
+        const end = parseDurationSeconds(parts[1]);
+        totalClipDuration = end - start;
+      }
+    }
+
     // Use yt-dlp-wrap's EventEmitter interface
     const emitter = ytDlpWrap.exec(args);
 
@@ -281,14 +325,35 @@ function executeDownload(
           }
 
           const timeMatch = text.match(/time=([\d:.]+)/);
-          const speedMatch = text.match(/speed=\s*([\d.]+)x/);
+          const sizeMatch = text.match(/(?:Lsize|size)=\s*([\d.]+\s*[KMG]i?B)/i);
 
           if (timeMatch?.[1]) {
-            const speed = speedMatch ? `${speedMatch[1]}x` : undefined;
-            if (!quiet) {
-              clearLine();
-              write(`\r${c.bold("Downloading:")} ${c.dim(timeMatch[1])} ${speed ? c.speed(speed) : ""}`);
+            const currentTime = parseDurationSeconds(timeMatch[1]);
+            let percent = 0;
+            if (totalClipDuration > 0) {
+              percent = (currentTime / totalClipDuration) * 100;
+              if (percent > 100) percent = 100;
             }
+
+            // Calculate speed
+            if (sizeMatch?.[1]) {
+              const currentBytes = parseSizeToBytes(sizeMatch[1]);
+              const now = Date.now();
+              const deltaMs = now - lastTime;
+
+              // Update speed every 500ms
+              if (deltaMs > 500) {
+                const deltaBytes = currentBytes - lastBytes;
+                if (deltaBytes > 0) {
+                  const bytesPerSec = (deltaBytes / deltaMs) * 1000;
+                  currentSpeedStr = formatSpeed(bytesPerSec);
+                }
+                lastBytes = currentBytes;
+                lastTime = now;
+              }
+            }
+
+            renderProgress(percent, currentSpeedStr, quiet);
           }
         }
       });
@@ -451,7 +516,7 @@ export const DownloadServiceLive = Layer.effect(
             args,
             downloadDir,
             url,
-            quiet
+            options
           );
         }),
     };
